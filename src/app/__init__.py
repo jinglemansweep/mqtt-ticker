@@ -159,7 +159,7 @@ async def tick():
         group.append(label)
         store["message"] = None
 
-        if len(group) > 6:
+        if len(group) > 8:
             group.pop(0)
     store["frame"] += 1
     gc.collect()
