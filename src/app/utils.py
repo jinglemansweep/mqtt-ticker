@@ -56,3 +56,7 @@ def parse_timestamp(timestamp, is_dst=-1):
             is_dst,
         )
     )
+
+
+def rgb2hex(r, g, b):
+    return (r << 16) + (g << 8) + b

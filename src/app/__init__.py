@@ -2,7 +2,6 @@ import asyncio
 import board
 from busio import I2C
 import gc
-import json
 import adafruit_esp32spi.adafruit_esp32spi_socket as socket
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from adafruit_matrixportal.network import Network
@@ -28,7 +27,7 @@ from app.storage import store
 from app.gpio import poll_buttons
 from app.hass import advertise_entity, OPTS_LIGHT_RGB
 from app.mqtt import mqtt_poll, on_mqtt_connect, on_mqtt_disconnect, on_mqtt_message
-from app.utils import logger, debug, matrix_rotation, parse_timestamp
+from app.utils import logger, debug, matrix_rotation, parse_timestamp, rgb2hex
 
 logger(
     f"debug={DEBUG} ntp_enable={NTP_ENABLE} ntp_interval={NTP_INTERVAL} mqtt_prefix={MQTT_PREFIX}"
@@ -135,15 +134,17 @@ async def main():
 
     while True:
         await tick()
-        await asyncio.sleep(0.0001)
+        # await asyncio.sleep(0.0001)
 
 
 async def tick():
     frame = store["frame"]
+    e16 = frame % 16
     logger(f"tick: frame={frame}")
     # print(store.items())
     label_mem_free.text = f"mem: {gc.mem_free()}"
     label_frame.text = f"frame: {frame}"
+    label_frame.color = rgb2hex(e16, 16 - e16, e16)
     store["frame"] += 1
     gc.collect()
 
