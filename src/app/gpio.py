@@ -2,6 +2,9 @@ import asyncio
 import board
 from keypad import Keys
 
+from app.storage import store
+from app.utils import logger
+
 
 async def poll_buttons():
     with Keys(
@@ -11,5 +14,6 @@ async def poll_buttons():
             key_event = keys.events.get()
             if key_event and key_event.pressed:
                 key_number = key_event.key_number
-                print("button", key_number)
+                logger(f"button: key={key_number}")
+                store["button"] = key_number
             await asyncio.sleep(0.001)

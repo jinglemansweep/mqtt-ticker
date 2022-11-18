@@ -1,6 +1,6 @@
 import json
 from app.config import MQTT_PREFIX
-from app.store import store
+from app.storage import store
 from app.utils import logger
 
 HASS_TOPIC_PREFIX = "homeassistant"
@@ -43,7 +43,9 @@ def update_entity_state(client, device_class, name, new_state=None):
         new_state = {}
     store["entities"][name] = new_state
     payload = (
-        store["entities"][name] if device_class == "switch" else json.dumps(new_state)
+        store["entities"][name]["state"]
+        if device_class == "switch"
+        else json.dumps(new_state)
     )
     topic_prefix = build_entity_topic_prefix(name, device_class)
     client.publish(f"{topic_prefix}/state", payload, retain=True, qos=1)

@@ -56,8 +56,3 @@ def parse_timestamp(timestamp, is_dst=-1):
             is_dst,
         )
     )
-
-
-def global_test():
-    global DEBUG
-    print("global DEBUG", DEBUG)

@@ -2,7 +2,6 @@ import asyncio
 import board
 from busio import I2C
 import gc
-
 import json
 import adafruit_esp32spi.adafruit_esp32spi_socket as socket
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
@@ -25,11 +24,11 @@ from app.config import (
     MATRIX_COLOR_ORDER,
     MQTT_PREFIX,
 )
-from app.store import store
+from app.storage import store
 from app.gpio import poll_buttons
 from app.hass import advertise_entity, OPTS_LIGHT_RGB
 from app.mqtt import mqtt_poll, on_mqtt_connect, on_mqtt_disconnect, on_mqtt_message
-from app.utils import logger, debug, matrix_rotation, parse_timestamp, global_test
+from app.utils import logger, debug, matrix_rotation, parse_timestamp
 
 logger(
     f"debug={DEBUG} ntp_enable={NTP_ENABLE} ntp_interval={NTP_INTERVAL} mqtt_prefix={MQTT_PREFIX}"
@@ -63,14 +62,6 @@ display = matrix.display
 display.rotation = matrix_rotation(accelerometer)
 display.show(Group())
 gc.collect()
-
-# DISPLAYIO TESTING
-group = Group()
-label = Label(
-    x=0, y=3, font=font_bitocra, color=0xFFFFFF, text="hello world, howe are you!"
-)
-group.append(label)
-display.show(group)
 
 # NETWORKING
 logger("configuring networking")
@@ -116,6 +107,13 @@ advertise_entity(
     dict(state="ON", color=0x00FF00, brightness=255, color_mode="rgb"),
 )
 
+# DISPLAYIO
+group = Group()
+label_mem_free = Label(x=0, y=3, font=font_bitocra, color=0xFFFFFF, text="mem:")
+group.append(label_mem_free)
+label_frame = Label(x=0, y=10, font=font_bitocra, color=0xFFFFFF, text="frame:")
+group.append(label_frame)
+display.show(group)
 
 # EVENT LOOP
 def run():
@@ -131,7 +129,6 @@ def run():
 
 async def main():
     logger("event loop started")
-    global_test()
     asyncio.create_task(poll_buttons())
     asyncio.create_task(mqtt_poll(client))
     gc.collect()
@@ -142,8 +139,12 @@ async def main():
 
 
 async def tick():
-    logger("tick", json.dumps(store))
-    await asyncio.sleep(1)
+    frame = store["frame"]
+    logger(f"tick: frame={frame}")
+    # print(store.items())
+    label_mem_free.text = f"mem: {gc.mem_free()}"
+    label_frame.text = f"frame: {frame}"
+    store["frame"] += 1
     gc.collect()
 
 
