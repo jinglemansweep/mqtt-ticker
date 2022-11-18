@@ -1,8 +1,10 @@
 import asyncio
+from app.hass import process_message
 
 
 def on_mqtt_message(client, topic, message):
     print(f"MQTT > Message: Topic={topic} | Message={message}")
+    process_message(client, topic, message)
 
 
 def on_mqtt_connect(client, userdata, flags, rc):

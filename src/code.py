@@ -2,7 +2,7 @@ import gc
 
 gc.collect()
 
-print("Boot > Init: Mem={}".format(gc.mem_free()))
+print("BOOT [mem:{}]".format(gc.mem_free()))
 
 import displayio
 

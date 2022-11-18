@@ -3,7 +3,7 @@ import board
 from busio import I2C
 import gc
 
-# import json
+import json
 import adafruit_esp32spi.adafruit_esp32spi_socket as socket
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from adafruit_matrixportal.network import Network
@@ -11,6 +11,7 @@ from adafruit_matrixportal.matrix import Matrix
 from adafruit_bitmap_font import bitmap_font
 from adafruit_lis3dh import LIS3DH_I2C
 from displayio import Group
+from adafruit_display_text.label import Label
 from rtc import RTC
 from secrets import secrets
 
@@ -24,9 +25,11 @@ from app.config import (
     MATRIX_COLOR_ORDER,
     MQTT_PREFIX,
 )
+from app.store import store
 from app.gpio import poll_buttons
+from app.hass import advertise_entity, OPTS_LIGHT_RGB
 from app.mqtt import mqtt_poll, on_mqtt_connect, on_mqtt_disconnect, on_mqtt_message
-from app.utils import logger, matrix_rotation, parse_timestamp, global_test
+from app.utils import logger, debug, matrix_rotation, parse_timestamp, global_test
 
 logger(
     f"debug={DEBUG} ntp_enable={NTP_ENABLE} ntp_interval={NTP_INTERVAL} mqtt_prefix={MQTT_PREFIX}"
@@ -61,12 +64,20 @@ display.rotation = matrix_rotation(accelerometer)
 display.show(Group())
 gc.collect()
 
+# DISPLAYIO TESTING
+group = Group()
+label = Label(
+    x=0, y=3, font=font_bitocra, color=0xFFFFFF, text="hello world, howe are you!"
+)
+group.append(label)
+display.show(group)
+
 # NETWORKING
 logger("configuring networking")
 network = Network(status_neopixel=board.NEOPIXEL, debug=DEBUG)
 network.connect()
 mac = network._wifi.esp.MAC_address
-device_id = "{:02x}{:02x}{:02x}{:02x}".format(mac[0], mac[1], mac[2], mac[3])
+host_id = "{:02x}{:02x}{:02x}{:02x}".format(mac[0], mac[1], mac[2], mac[3])
 gc.collect()
 # NETWORK TIME
 if NTP_ENABLE:
@@ -74,8 +85,6 @@ if NTP_ENABLE:
     timestamp = network.get_local_time()
     timetuple = parse_timestamp(timestamp)
     RTC().datetime = timetuple
-
-# SHARED STATE
 
 
 # MQTT
@@ -92,6 +101,20 @@ client.on_disconnect = on_mqtt_disconnect
 client.on_message = on_mqtt_message
 client.connect()
 gc.collect()
+
+# HOME ASSISTANT
+light_rgb_options = dict(
+    color_mode=True, supported_color_modes=["rgb"], brightness=False
+)
+advertise_entity(client, host_id, "power", "switch")
+advertise_entity(
+    client,
+    host_id,
+    "date_rgb",
+    "light",
+    OPTS_LIGHT_RGB,
+    dict(state="ON", color=0x00FF00, brightness=255, color_mode="rgb"),
+)
 
 
 # EVENT LOOP
@@ -111,15 +134,15 @@ async def main():
     global_test()
     asyncio.create_task(poll_buttons())
     asyncio.create_task(mqtt_poll(client))
-    client.subscribe(f"matrixportal/{device_id}/#", 1)
     gc.collect()
+
     while True:
         await tick()
         await asyncio.sleep(0.0001)
 
 
 async def tick():
-    logger("tick")
+    logger("tick", json.dumps(store))
     await asyncio.sleep(1)
     gc.collect()
 

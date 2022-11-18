@@ -5,11 +5,18 @@ import time
 from app.config import DEBUG
 
 
-def logger(msg, is_debug=False):
-    if is_debug and not DEBUG:
-        return
-    level = "DEBUG" if is_debug else "INFO"
-    print(f"{level} [mem:{gc.mem_free()}] > {msg}")
+def logger(msg, *args):
+    _log_print("INFO", msg, *args)
+
+
+def debug(msg, *args):
+    global DEBUG
+    if DEBUG:
+        _log_print("DEBUG", msg, *args)
+
+
+def _log_print(level, msg, *args):
+    print(f"{level} [mem:{gc.mem_free()}] > {msg}", *args)
 
 
 def matrix_rotation(accelerometer):
